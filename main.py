@@ -68,6 +68,18 @@ async def setup_scheduler():
     )
     logger.info("📅 Планировщик запущен с задачей очистки callback'ов")
 
+def register_handlers():
+    """Регистрирует все обработчики после инициализации бота"""
+    from handlers import start
+    from handlers import account
+    from handlers import group
+    from handlers import broadcast
+    from handlers import history
+    from handlers import callback_handlers
+    
+    # Здесь можно добавить дополнительную регистрацию если нужно
+    logger.info("✅ Все обработчики зарегистрированы")
+
 async def main():
     """Главная асинхронная функция бота"""
     logger.info("🤖 Инициализация бота...")
@@ -79,8 +91,8 @@ async def main():
     import config
     config.bot = bot
     
-    # ТЕПЕРЬ импортируем handlers ПОСЛЕ инициализации бота
-    from handlers import *
+    # Регистрируем обработчики
+    register_handlers()
     
     # Создаем таблицы в базе данных
     create_table()
