@@ -1,0 +1,31 @@
+# Секретные данные
+.env
+
+# Базы данных
+*.db
+*.sqlite
+*.sqlite3
+
+# Сессии Telethon
+*.session
+*.session-journal
+.sessions/
+
+# Временные файлы Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Логи
+logs/
+*.log
+
+# Виртуальное окружение
+venv/
+env/
+ENV/
+
+# Файлы IDE
+.vscode/
+.idea/
+*.swp
