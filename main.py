@@ -3,12 +3,10 @@ import os
 import sys
 from loguru import logger
 from handlers import *
-from config import (BOT_TOKEN, conn, bot, API_ID, API_HASH, user_clients, scheduler, cleanup_processed_callbacks)
+from config import (BOT_TOKEN, conn, API_ID, API_HASH, user_clients, scheduler, cleanup_processed_callbacks, init_bot)
 from utils.database import create_table, delete_table
 from telethon import TelegramClient
 from telethon.sessions import StringSession
-from keep_alive import keep_alive
-keep_alive()
 
 # Настройка loguru для красивого отображения логов
 logger.remove()  # Удаляем стандартный обработчик
@@ -21,7 +19,7 @@ logger.add(
     colorize=True
 )
 
-# Добавляем логирование в файл (для Render используем stdout)
+# Для Render используем stdout
 logger.add(
     sys.stdout,
     level="DEBUG",
@@ -74,6 +72,16 @@ async def setup_scheduler():
 async def main():
     """Главная асинхронная функция бота"""
     logger.info("🤖 Инициализация бота...")
+    
+    # Инициализируем бота
+    from config import bot as bot_instance
+    if bot_instance is None:
+        bot = await init_bot()
+        # Обновляем глобальную переменную в config
+        import config
+        config.bot = bot
+    else:
+        bot = bot_instance
     
     # Создаем таблицы в базе данных
     create_table()
