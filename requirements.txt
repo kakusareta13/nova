@@ -9,3 +9,4 @@ tzlocal
 cryptg
 pillow
 loguru
+Flask==2.3.3
