@@ -7,6 +7,8 @@ from config import (BOT_TOKEN, conn, bot, API_ID, API_HASH, user_clients, schedu
 from utils.database import create_table, delete_table
 from telethon import TelegramClient
 from telethon.sessions import StringSession
+from keep_alive import keep_alive
+keep_alive()
 
 # Настройка loguru для красивого отображения логов
 logger.remove()  # Удаляем стандартный обработчик
