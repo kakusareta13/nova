@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 from loguru import logger
-from handlers import *
 from config import (BOT_TOKEN, conn, API_ID, API_HASH, user_clients, scheduler, cleanup_processed_callbacks, init_bot)
 from utils.database import create_table, delete_table
 from telethon import TelegramClient
@@ -74,14 +73,14 @@ async def main():
     logger.info("🤖 Инициализация бота...")
     
     # Инициализируем бота
-    from config import bot as bot_instance
-    if bot_instance is None:
-        bot = await init_bot()
-        # Обновляем глобальную переменную в config
-        import config
-        config.bot = bot
-    else:
-        bot = bot_instance
+    bot = await init_bot()
+    
+    # Обновляем глобальную переменную в config
+    import config
+    config.bot = bot
+    
+    # ТЕПЕРЬ импортируем handlers ПОСЛЕ инициализации бота
+    from handlers import *
     
     # Создаем таблицы в базе данных
     create_table()
