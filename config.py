@@ -10,8 +10,10 @@ from telethon import TelegramClient
 API_ID: int = int(config("API_ID"))
 API_HASH: str = config("API_HASH")
 BOT_TOKEN: str = config("BOT_TOKEN")
-ADMIN_ID_LIST: List[int] = list(map(int, map(str.strip, config("ADMIN_ID_LIST").split(","))))  # <-- Вставить ID разрешенных телеграмм аккаунтов через запятую
-bot: TelegramClient = TelegramClient("bot", API_ID, API_HASH)
+ADMIN_ID_LIST: List[int] = list(map(int, map(str.strip, config("ADMIN_ID_LIST").split(","))))
+
+# Не создаем клиент сразу, а будем создавать позже
+bot: TelegramClient = None  # Будет инициализирован в main.py
 conn: sqlite3.Connection = sqlite3.connect("sessions.db", timeout=30.0)
 
 # Аннотирование
@@ -65,3 +67,10 @@ def cleanup_processed_callbacks() -> None:
     Вызывается периодически через scheduler.
     """
     processed_callbacks.clear()
+
+
+async def init_bot():
+    """Инициализация бота в асинхронном контексте"""
+    global bot
+    bot = TelegramClient("bot", API_ID, API_HASH)
+    return bot
