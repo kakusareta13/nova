@@ -16,8 +16,8 @@ API_HASH: str = config("API_HASH")
 BOT_TOKEN: str = config("BOT_TOKEN")
 ADMIN_ID_LIST: List[int] = list(map(int, map(str.strip, config("ADMIN_ID_LIST").split(","))))
 
-# Инициализация бота
-bot = TelegramClient("bot", API_ID, API_HASH)
+# НЕ создаем клиент здесь - будем создавать в main()
+bot = None
 conn = sqlite3.connect("sessions.db", timeout=30.0)
 scheduler = AsyncIOScheduler()
 
@@ -108,82 +108,84 @@ async def main_menu(event, user_id: int):
     await event.respond("🔰 **Главное меню**", buttons=buttons)
 
 # ============ ОБРАБОТЧИКИ КОМАНД ============
-@bot.on(events.NewMessage(pattern='/start'))
-async def start_handler(event):
-    user_id = event.sender_id
+async def register_handlers():
+    global bot
     
-    if not is_admin(user_id):
-        await event.respond("❌ У вас нет доступа к этому боту!")
-        return
-    
-    await main_menu(event, user_id)
+    @bot.on(events.NewMessage(pattern='/start'))
+    async def start_handler(event):
+        user_id = event.sender_id
+        
+        if not is_admin(user_id):
+            await event.respond("❌ У вас нет доступа к этому боту!")
+            return
+        
+        await main_menu(event, user_id)
 
-@bot.on(events.NewMessage)
-async def message_handler(event):
-    user_id = event.sender_id
-    
-    if not is_admin(user_id):
-        return
-    
-    # Обработка ожидания кода
-    if user_id in code_waiting:
-        code = event.raw_text
-        await process_code(event, user_id, code)
-        return
-    
-    # Обработка ожидания пароля
-    if user_id in password_waiting:
-        password = event.raw_text
-        await process_password(event, user_id, password)
-        return
-    
-    # Обработка ожидания текста рассылки
-    if user_id in broadcast_all_text:
-        text = event.raw_text
-        await process_broadcast_text(event, user_id, text)
-        return
-    
-    # Обработка ожидания интервала
-    if user_id in user_states and user_states[user_id] == "waiting_interval":
-        interval = event.raw_text
-        await process_interval(event, user_id, interval)
-        return
+    @bot.on(events.NewMessage)
+    async def message_handler(event):
+        user_id = event.sender_id
+        
+        if not is_admin(user_id):
+            return
+        
+        # Обработка ожидания кода
+        if user_id in code_waiting:
+            code = event.raw_text
+            await process_code(event, user_id, code)
+            return
+        
+        # Обработка ожидания пароля
+        if user_id in password_waiting:
+            password = event.raw_text
+            await process_password(event, user_id, password)
+            return
+        
+        # Обработка ожидания текста рассылки
+        if user_id in broadcast_all_text:
+            text = event.raw_text
+            await process_broadcast_text(event, user_id, text)
+            return
+        
+        # Обработка ожидания интервала
+        if user_id in user_states and user_states[user_id] == "waiting_interval":
+            interval = event.raw_text
+            await process_interval(event, user_id, interval)
+            return
 
-# ============ ОБРАБОТЧИКИ CALLBACK ============
-@bot.on(events.CallbackQuery)
-async def callback_handler(event):
-    user_id = event.sender_id
-    data = event.data.decode()
-    
-    if not is_admin(user_id):
-        await event.answer("❌ Нет доступа", alert=True)
-        return
-    
-    if data == "add_account":
-        await add_account_handler(event, user_id)
-    elif data == "my_accounts":
-        await my_accounts_handler(event, user_id)
-    elif data == "add_group":
-        await add_group_handler(event, user_id)
-    elif data == "history":
-        await history_handler(event, user_id)
-    elif data.startswith("account_"):
-        account_id = int(data.split("_")[1])
-        await account_detail_handler(event, user_id, account_id)
-    elif data.startswith("group_"):
-        group_id = int(data.split("_")[1])
-        await group_detail_handler(event, user_id, group_id)
-    elif data.startswith("delete_account_"):
-        account_id = int(data.split("_")[2])
-        await confirm_delete_account(event, user_id, account_id)
-    elif data.startswith("confirm_delete_"):
-        account_id = int(data.split("_")[2])
-        await delete_account(event, user_id, account_id)
-    elif data.startswith("start_broadcast_"):
-        account_id = int(data.split("_")[2])
-        await start_broadcast_handler(event, user_id, account_id)
-    elif data == "stop_broadcast":
-        await stop_broadcast_handler(event, user_id)
+    @bot.on(events.CallbackQuery)
+    async def callback_handler(event):
+        user_id = event.sender_id
+        data = event.data.decode()
+        
+        if not is_admin(user_id):
+            await event.answer("❌ Нет доступа", alert=True)
+            return
+        
+        if data == "add_account":
+            await add_account_handler(event, user_id)
+        elif data == "my_accounts":
+            await my_accounts_handler(event, user_id)
+        elif data == "add_group":
+            await add_group_handler(event, user_id)
+        elif data == "history":
+            await history_handler(event, user_id)
+        elif data.startswith("account_"):
+            account_id = int(data.split("_")[1])
+            await account_detail_handler(event, user_id, account_id)
+        elif data.startswith("group_"):
+            group_id = int(data.split("_")[1])
+            await group_detail_handler(event, user_id, group_id)
+        elif data.startswith("delete_account_"):
+            account_id = int(data.split("_")[2])
+            await confirm_delete_account(event, user_id, account_id)
+        elif data.startswith("confirm_delete_"):
+            account_id = int(data.split("_")[2])
+            await delete_account(event, user_id, account_id)
+        elif data.startswith("start_broadcast_"):
+            account_id = int(data.split("_")[2])
+            await start_broadcast_handler(event, user_id, account_id)
+        elif data == "stop_broadcast":
+            await stop_broadcast_handler(event, user_id)
 
 # ============ ОСНОВНЫЕ ФУНКЦИИ ============
 async def add_account_handler(event, user_id):
@@ -191,6 +193,7 @@ async def add_account_handler(event, user_id):
     phone_waiting[user_id] = True
     await event.edit("📞 **Введите номер телефона**\n\nВ формате: +79001234567")
     
+    # Создаем временный обработчик
     @bot.on(events.NewMessage)
     async def get_phone(e):
         if e.sender_id == user_id and user_id in phone_waiting:
@@ -445,12 +448,10 @@ async def process_interval(event, user_id, interval):
             await main_menu(event, user_id)
             return
         
-        # Запускаем рассылку
         await event.respond(f"🚀 **Рассылка запущена!**\n\nГрупп: {len(groups)}\nИнтервал: {interval_seconds} сек\n\nНачинаем отправку...")
         
         for group_id, group_username in groups:
             try:
-                # Получаем клиент для аккаунта
                 cursor = conn.cursor()
                 session = cursor.execute("SELECT session_string FROM sessions WHERE user_id = ?", (account_id,)).fetchone()
                 cursor.close()
@@ -459,10 +460,8 @@ async def process_interval(event, user_id, interval):
                     client = TelegramClient(StringSession(session[0]), API_ID, API_HASH)
                     await client.connect()
                     
-                    # Отправляем сообщение
                     await client.send_message(group_username, text)
                     
-                    # Сохраняем в историю
                     cursor = conn.cursor()
                     cursor.execute(
                         "INSERT INTO history (user_id, group_username, message) VALUES (?, ?, ?)",
@@ -486,7 +485,6 @@ async def process_interval(event, user_id, interval):
 
 async def stop_broadcast_handler(event, user_id):
     await event.answer()
-    # Здесь логика остановки рассылки
     await event.edit("⏹️ **Рассылка остановлена**")
 
 # ============ ЗАГРУЗКА СЕССИЙ ============
@@ -523,12 +521,20 @@ async def setup_scheduler():
 
 # ============ ЗАПУСК БОТА ============
 async def main():
+    global bot
+    
     logger.info("🤖 Инициализация бота...")
+    
+    # Создаем клиент ТОЛЬКО здесь, внутри async функции
+    bot = TelegramClient("bot", API_ID, API_HASH)
     
     create_table()
     
     logger.info("📱 Запуск бота...")
     await bot.start(bot_token=BOT_TOKEN)
+    
+    # Регистрируем обработчики ПОСЛЕ создания бота
+    await register_handlers()
     
     await load_sessions()
     await setup_scheduler()
